@@ -331,7 +331,7 @@ class Controls:
     self.sm.update(0)
 
     all_valid = CS.canValid and self.sm.all_alive_and_valid()
-    if not self.initialized and (all_valid or self.sm.frame * DT_CTRL > 2.0):
+    if not self.initialized and (all_valid or self.sm.frame * DT_CTRL > 3.0):
       self.CI.init(self.CP, self.can_sock, self.pm.sock['sendcan'])
       self.initialized = True
       Params().put_bool("ControlsReady", True)
@@ -349,7 +349,7 @@ class Controls:
     # Therefore we allow a mismatch for two samples, then we trigger the disengagement.
     if not self.enabled:
       self.mismatch_counter = 0
-    elif not self.sm['pandaState'].controlsAllowed and self.enabled:
+    if not self.sm['pandaState'].controlsAllowed and self.enabled:
       self.mismatch_counter += 1
 
     self.distance_traveled += CS.vEgo * DT_CTRL

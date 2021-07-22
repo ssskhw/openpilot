@@ -115,7 +115,7 @@ class LateralPlanner():
     one_blinker = sm['carState'].leftBlinker != sm['carState'].rightBlinker
     below_lane_change_speed = v_ego < LANE_CHANGE_SPEED_MIN
 
-    if (not active) or (self.lane_change_timer > LANE_CHANGE_TIME_MAX) or (not one_blinker) or (not self.lane_change_enabled):
+    if (not active) or (self.lane_change_timer > LANE_CHANGE_TIME_MAX) or (not one_blinker):
       self.lane_change_state = LaneChangeState.off
       self.lane_change_direction = LaneChangeDirection.none
     else:
@@ -252,7 +252,7 @@ class LateralPlanner():
     plan_send.lateralPlan.laneChangeState = self.lane_change_state
     plan_send.lateralPlan.laneChangeDirection = self.lane_change_direction
     plan_send.lateralPlan.autoLaneChangeEnabled = self.auto_lane_change_enabled
-    plan_send.lateralPlan.autoLaneChangeTimer = int(AUTO_LCA_START_TIME) - int(self.auto_lane_change_timer)
+    plan_send.lateralPlan.autoLaneChangeTimer = int(AUTO_LCA_TIME) - int(self.auto_lane_change_timer)
 
     pm.send('lateralPlan', plan_send)
 
