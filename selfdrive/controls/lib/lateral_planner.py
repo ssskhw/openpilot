@@ -86,18 +86,15 @@ class LateralPlanner():
 
   def update(self, sm, CP):
     try:
-      lateral_control_select = 0
-      lateral_control_select = int(sm['controlsState'].lateralControlSelect)
-      if lateral_control_select == 0:
+      if CP.lateralTuning.which() == 'pid':
         self.output_scale = sm['controlsState'].lateralControlState.pidState.output
-      elif lateral_control_select == 1:
+      elif CP.lateralTuning.which() == 'indi':
         self.output_scale = sm['controlsState'].lateralControlState.indiState.output
-      elif lateral_control_select == 2:
+      elif CP.lateralTuning.which() == 'lqr':
         self.output_scale = sm['controlsState'].lateralControlState.lqrState.output
-      elif lateral_control_select == 3:
-        self.output_scale = sm['controlsState'].lateralControlState.angleState.output
     except:
       pass
+
     v_ego = sm['carState'].vEgo
     active = sm['controlsState'].active
     measured_curvature = sm['controlsState'].curvature
@@ -122,16 +119,14 @@ class LateralPlanner():
       torque_applied = sm['carState'].steeringPressed and \
                        ((sm['carState'].steeringTorque > 0 and self.lane_change_direction == LaneChangeDirection.left) or
                         (sm['carState'].steeringTorque < 0 and self.lane_change_direction == LaneChangeDirection.right)) or \
-                        self.auto_lane_change_enabled and \
-                       (AUTO_LCA_TIME+0.25) > self.auto_lane_change_timer > AUTO_LCA_TIME
+                        self.auto_lane_change_enabled and (AUTO_LCA_TIME+0.25) > self.auto_lane_change_timer > AUTO_LCA_TIME
 
       blindspot_detected = ((sm['carState'].leftBlindspot and self.lane_change_direction == LaneChangeDirection.left) or
                             (sm['carState'].rightBlindspot and self.lane_change_direction == LaneChangeDirection.right))
 
       lane_change_prob = self.LP.l_lane_change_prob + self.LP.r_lane_change_prob
 
-      # State transitions
-      # off
+      # LaneChangeState.off
       if self.lane_change_state == LaneChangeState.off and one_blinker and not self.prev_one_blinker and not below_lane_change_speed:
         if sm['carState'].leftBlinker:
           self.lane_change_direction = LaneChangeDirection.left
@@ -141,7 +136,7 @@ class LateralPlanner():
         self.lane_change_state = LaneChangeState.preLaneChange
         self.lane_change_ll_prob = 1.0
 
-      # pre
+      # LaneChangeState.preLaneChange
       elif self.lane_change_state == LaneChangeState.preLaneChange:
         if not one_blinker or below_lane_change_speed:
           self.lane_change_state = LaneChangeState.off
@@ -152,7 +147,7 @@ class LateralPlanner():
         elif not torque_applied and self.auto_lane_change_timer == 10.0 and not self.prev_torque_applied:
           self.prev_torque_applied = True
 
-      # starting
+      # LaneChangeState.laneChangeStarting
       elif self.lane_change_state == LaneChangeState.laneChangeStarting:
         # fade out over .5s
         self.lane_change_ll_prob = max(self.lane_change_ll_prob - 2*DT_MDL, 0.0)
@@ -160,7 +155,7 @@ class LateralPlanner():
         if lane_change_prob < 0.02 and self.lane_change_ll_prob < 0.01:
           self.lane_change_state = LaneChangeState.laneChangeFinishing
 
-      # finishing
+      # LaneChangeState.laneChangeFinishing
       elif self.lane_change_state == LaneChangeState.laneChangeFinishing:
         # fade in laneline over 1s
         self.lane_change_ll_prob = min(self.lane_change_ll_prob + DT_MDL, 1.0)
